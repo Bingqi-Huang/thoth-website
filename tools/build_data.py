@@ -140,7 +140,7 @@ def baseline_events(timeline, operator):
                                    for a in e["activities"]]))
         elif k == "no_plan":
             out.append(dict(t=round(e["sim_t"], 2), k="no_plan", reason=e.get("reason", "")))
-    for line in open(operator):
+    for line in (open(operator) if operator.exists() else []):
         e = json.loads(line)
         if e["kind"] == "interaction_start":
             out.append(dict(t=round(e["sent_mission_t"], 2), k="escalate", kind=e["request_kind"], text=e["text"]))

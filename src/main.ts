@@ -12,6 +12,8 @@ const CHIPS: [string, string][] = [
   ["pdu1-shutter", "PDU-1 overheats"],
   ["bess-battery", "BESS battery module failed"],
   ["isru-filter", "Oxygen plant filter clogged"],
+  ["sequential-faults", "BESS fails again after the repair"],
+  ["serial-mislocated", "Deliver ORU-0417 by its serial"],
   ["locate-fault", "Fault reported at the wrong unit"],
   ["deliver-battery", "Deliver a battery module"],
   ["restore-pdu2", "Reset PDU-2"],

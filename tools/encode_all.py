@@ -14,9 +14,13 @@ ROOT = Path(__file__).resolve().parent.parent
 B = ROOT / "media_build"
 which = sys.argv[1] if len(sys.argv) > 1 else "both"
 done_log = (B / "render.log").read_text() if (B / "render.log").exists() else ""
-for sc in SCENARIOS:
-    for r in sc["runs"]:
+runs = [r for sc in SCENARIOS for r in sc["runs"]]
+if os.environ.get("REVERSE"):
+    runs.reverse()
+for r in runs:
         rid = Path(r["dir"]).name
+        if any((B / "video" / f"{rid}.{k}.part.mp4").exists() for k in ("av1", "hevc") if which in (k, "both")):
+            continue
         if r["replay"].startswith(str(B)) and f" done {rid} " not in done_log:
             continue
         names = sorted(n for n in os.listdir(r["replay"]) if n.endswith(".png"))

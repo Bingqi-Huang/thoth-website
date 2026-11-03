@@ -170,6 +170,13 @@
     "label": null,
     "duration": 583.4,
     "success": false
+   },
+   {
+    "id": "europa_l2a_bess",
+    "system": "europa",
+    "label": null,
+    "duration": 1100.0,
+    "success": false
    }
   ]
  },
@@ -194,6 +201,13 @@
     "label": null,
     "duration": 434.6,
     "success": false
+   },
+   {
+    "id": "europa_l3_bess",
+    "system": "europa",
+    "label": null,
+    "duration": 563.0,
+    "success": false
    }
   ]
  },
@@ -211,6 +225,20 @@
     "label": null,
     "duration": 1133.1,
     "success": true
+   },
+   {
+    "id": "plexil_l3_isru",
+    "system": "plexil",
+    "label": null,
+    "duration": 515.6,
+    "success": false
+   },
+   {
+    "id": "europa_l3_isru",
+    "system": "europa",
+    "label": null,
+    "duration": 525.2,
+    "success": false
    }
   ]
  },
@@ -290,6 +318,20 @@
     "label": null,
     "duration": 2286.6,
     "success": true
+   },
+   {
+    "id": "plexil_compound_bess",
+    "system": "plexil",
+    "label": null,
+    "duration": 964.6,
+    "success": false
+   },
+   {
+    "id": "europa_compound_bess",
+    "system": "europa",
+    "label": null,
+    "duration": 1511.4,
+    "success": true
    }
   ]
  },
@@ -314,6 +356,34 @@
     "label": "Thoth \u00b7 before serial reading",
     "duration": 515.5,
     "success": false
+   },
+   {
+    "id": "post_plexil_h1",
+    "system": "plexil",
+    "label": null,
+    "duration": 863.4,
+    "success": true
+   },
+   {
+    "id": "post_europa_h1_f145",
+    "system": "europa",
+    "label": null,
+    "duration": 681.6,
+    "success": true
+   },
+   {
+    "id": "pre_plexil_h1",
+    "system": "plexil",
+    "label": "PLEXIL \u00b7 before",
+    "duration": 426.2,
+    "success": false
+   },
+   {
+    "id": "pre_europa_h1",
+    "system": "europa",
+    "label": "EUROPA\u2192PLEXIL \u00b7 before",
+    "duration": 422.2,
+    "success": false
    }
   ]
  },
@@ -337,6 +407,34 @@
     "system": "thoth",
     "label": "Thoth \u00b7 before serial reading",
     "duration": 459.6,
+    "success": false
+   },
+   {
+    "id": "post_plexil_h2",
+    "system": "plexil",
+    "label": null,
+    "duration": 419.8,
+    "success": true
+   },
+   {
+    "id": "post_europa_h2",
+    "system": "europa",
+    "label": null,
+    "duration": 417.0,
+    "success": true
+   },
+   {
+    "id": "pre_plexil_h2",
+    "system": "plexil",
+    "label": "PLEXIL \u00b7 before",
+    "duration": 373.0,
+    "success": false
+   },
+   {
+    "id": "pre_europa_h2",
+    "system": "europa",
+    "label": "EUROPA\u2192PLEXIL \u00b7 before",
+    "duration": 366.4,
     "success": false
    }
   ]
