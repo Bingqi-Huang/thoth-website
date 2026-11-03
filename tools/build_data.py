@@ -191,6 +191,9 @@ def main():
                 ev = json.load(open(row))
                 run["outcome"] = dict(success=ev["autonomous_mission_success"], reason=ev["failure_reason"],
                                       elapsed=ev["mission_elapsed_s"])
+            cams = json.load(open(ROOT / "media_build" / "video" / "cams" / "t0.json"))
+            if rid in cams:
+                run["cams"] = dict(t0=cams[rid])
             if "success" in r:
                 run["outcome"] = dict(success=r["success"], reason=None, elapsed=round(t1, 1))
             json.dump(run, open(OUT / "runs" / f"{rid}.json", "w"), separators=(",", ":"))

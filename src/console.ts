@@ -108,6 +108,20 @@ export class MissionConsole {
     requestAnimationFrame(loop);
   }
 
+  camSeekAt = 0;
+  syncCams(t: number, force: boolean) {
+    const run = this.run!;
+    if (!run.cams) return;
+    const now = performance.now();
+    if (!force && now - this.camSeekAt < 150) return;
+    const target = Math.max(0, t - run.cams.t0);
+    for (const id of ["cam-front", "cam-wrist"]) {
+      const c = $<HTMLVideoElement>(id);
+      if (c.readyState >= 1 && Math.abs(c.currentTime - target) >= 0.5) c.currentTime = target;
+    }
+    this.camSeekAt = now;
+  }
+
   stick = true;
   stickBottom() {
     const feed = $("feed");
@@ -162,6 +176,13 @@ export class MissionConsole {
     v.load();
     v.playbackRate = this.rate;
     v.onloadedmetadata = () => { v.playbackRate = this.rate; };
+    const cams = $("cams");
+    cams.classList.toggle("off", !run.cams);
+    for (const id of ["cam-front", "cam-wrist"]) {
+      const c = $<HTMLVideoElement>(id);
+      c.src = run.cams ? `${VIDEO_BASE}cams/${run.id}.mp4` : "";
+    }
+    this.camSeekAt = 0;
     this.lastT = run.video.t0;
     this.update(run.video.t0, true);
     if (autoplay) { this.setPlaying(true); }
@@ -246,6 +267,7 @@ export class MissionConsole {
     $("tl-fill").style.width = `${f * 100}%`;
     $("tl-head").style.left = `${f * 100}%`;
     this.map.update(t);
+    this.syncCams(t, seeked);
     // events
     let idx = 0;
     { let lo = 0, hi = run.events.length; while (lo < hi) { const m = (lo + hi) >> 1; if (run.events[m].t <= t) lo = m + 1; else hi = m; } idx = lo; }

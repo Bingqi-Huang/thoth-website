@@ -20,6 +20,7 @@ export interface Run {
   track: [number, number, number, number, string | null][];
   events: Ev[];
   outcome?: { success: boolean; reason: string | null; elapsed: number };
+  cams?: { t0: number };
 }
 
 export const SYSTEM_NAME: Record<System, string> = { thoth: "Thoth", plexil: "PLEXIL", europa: "EUROPA→PLEXIL" };
