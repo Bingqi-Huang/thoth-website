@@ -1,0 +1,250 @@
+[
+ {
+  "id": "restore-pdu2",
+  "group": "reference",
+  "family": "maintenance",
+  "title": "Restore PDU-2",
+  "condition": "Tripped breaker at PDU-2.",
+  "keywords": "pdu-2 pdu2 communication comms breaker reset trip",
+  "runs": [
+   {
+    "id": "ours_a_pdu2",
+    "system": "thoth",
+    "label": null,
+    "duration": 278.7,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "restore-bess",
+  "group": "reference",
+  "family": "maintenance",
+  "title": "Restore BESS",
+  "condition": "Tripped breaker at the battery energy storage system.",
+  "keywords": "bess battery storage breaker reset trip",
+  "runs": [
+   {
+    "id": "ours_a_bess",
+    "system": "thoth",
+    "label": null,
+    "duration": 380.1,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "restore-isru",
+  "group": "reference",
+  "family": "maintenance",
+  "title": "Restore ISRU",
+  "condition": "Tripped breaker at the oxygen plant.",
+  "keywords": "isru oxygen plant breaker reset trip",
+  "runs": [
+   {
+    "id": "ours_a_isru",
+    "system": "thoth",
+    "label": null,
+    "duration": 631.6,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "locate-fault",
+  "group": "reference",
+  "family": "maintenance",
+  "title": "Locate and restore faulty equipment",
+  "condition": "The report names PDU-2, but the tripped breaker is at BESS.",
+  "keywords": "locate find wrong misreport misreported report different unit",
+  "runs": [
+   {
+    "id": "ours_a_misreport",
+    "system": "thoth",
+    "label": null,
+    "duration": 519.0,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "deliver-oru",
+  "group": "reference",
+  "family": "delivery",
+  "title": "Deliver a spare module to PDU-3",
+  "condition": "Standard inventory and destination.",
+  "keywords": "deliver spare oru module pdu-3 pdu3 shelf",
+  "runs": [
+   {
+    "id": "ours_b_oru_pdu3",
+    "system": "thoth",
+    "label": null,
+    "duration": 580.5,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "deliver-battery",
+  "group": "reference",
+  "family": "delivery",
+  "title": "Deliver a battery module to BESS",
+  "condition": "Standard inventory and destination.",
+  "keywords": "deliver battery module bess stand",
+  "runs": [
+   {
+    "id": "ours_b_bat_bess",
+    "system": "thoth",
+    "label": null,
+    "duration": 1171.1,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "deliver-consumables",
+  "group": "reference",
+  "family": "delivery",
+  "title": "Deliver consumables to the habitat",
+  "condition": "Standard inventory and destination.",
+  "keywords": "deliver consumables container habitat logistics",
+  "runs": [
+   {
+    "id": "ours_b_cons_habitat",
+    "system": "thoth",
+    "label": null,
+    "duration": 594.0,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "pdu1-shutter",
+  "group": "contingency",
+  "family": "maintenance",
+  "title": "Restore PDU-1",
+  "condition": "Overheating trip with the heat-rejection shutter closed.",
+  "keywords": "pdu-1 pdu1 overheat overheating shutter radiator heat temperature",
+  "runs": [
+   {
+    "id": "ours_l2a_pdu1_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 407.8,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "bess-shutter",
+  "group": "contingency",
+  "family": "maintenance",
+  "title": "Restore BESS",
+  "condition": "Overheating trip with the heat-rejection shutter closed.",
+  "keywords": "bess overheat overheating shutter hvac heat temperature",
+  "runs": [
+   {
+    "id": "ours_l2a_bess_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 1024.5,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "bess-battery",
+  "group": "contingency",
+  "family": "maintenance",
+  "title": "Restore BESS",
+  "condition": "A failed battery module prevents sustained recovery after reset.",
+  "keywords": "bess battery module failed replace swap recurring",
+  "runs": [
+   {
+    "id": "ours_l3_bess_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 1427.7,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "isru-filter",
+  "group": "contingency",
+  "family": "maintenance",
+  "title": "Restore ISRU",
+  "condition": "A clogged filter prevents sustained recovery after reset.",
+  "keywords": "isru filter clogged cartridge oxygen replace",
+  "runs": [
+   {
+    "id": "ours_l3_isru_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 1133.1,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "no-spare",
+  "group": "contingency",
+  "family": "maintenance",
+  "title": "Restore PDU-1",
+  "condition": "No serviceable spare in storage; compatible modules remain installed in energized equipment.",
+  "keywords": "pdu-1 pdu1 no spare cannibalize donor borrow authorization approval energized",
+  "runs": [
+   {
+    "id": "ours_l4_pdu1_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 1192.7,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "occupied-destination",
+  "group": "contingency",
+  "family": "delivery",
+  "title": "Deliver an item to the habitat",
+  "condition": "The destination support is occupied by a recorded return item.",
+  "keywords": "habitat occupied destination blocked relocate return item",
+  "runs": [
+   {
+    "id": "ours_l2b_habitat_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 1599.5,
+    "success": true
+   }
+  ]
+ },
+ {
+  "id": "sequential-faults",
+  "group": "sequential",
+  "family": "maintenance",
+  "title": "Restore BESS",
+  "condition": "A battery-module fault is followed by an overheating trip after replacement and reset.",
+  "keywords": "bess sequential second fault after replacement compound overheating battery",
+  "runs": []
+ },
+ {
+  "id": "serial-mislocated",
+  "group": "identity",
+  "family": "delivery",
+  "title": "Deliver ORU-0417 to PDU-3",
+  "condition": "The item's physical location differs from the inventory record.",
+  "keywords": "serial number oru-0417 mislocated wrong place record label scan",
+  "runs": []
+ },
+ {
+  "id": "serial-swapped",
+  "group": "identity",
+  "family": "delivery",
+  "title": "Deliver ORU-0417 to PDU-1",
+  "condition": "Inventory records for two visually similar items are exchanged.",
+  "keywords": "serial number oru-0417 swapped exchanged records label scan",
+  "runs": []
+ }
+]
