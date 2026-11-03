@@ -132,6 +132,20 @@
     "label": null,
     "duration": 407.8,
     "success": true
+   },
+   {
+    "id": "plexil_l2a_pdu1",
+    "system": "plexil",
+    "label": null,
+    "duration": 444.6,
+    "success": false
+   },
+   {
+    "id": "europa_l2a_pdu1",
+    "system": "europa",
+    "label": null,
+    "duration": 709.0,
+    "success": false
    }
   ]
  },
@@ -149,6 +163,13 @@
     "label": null,
     "duration": 1024.5,
     "success": true
+   },
+   {
+    "id": "plexil_l2a_bess",
+    "system": "plexil",
+    "label": null,
+    "duration": 583.4,
+    "success": false
    }
   ]
  },
@@ -166,6 +187,13 @@
     "label": null,
     "duration": 1427.7,
     "success": true
+   },
+   {
+    "id": "plexil_l3_bess",
+    "system": "plexil",
+    "label": null,
+    "duration": 434.6,
+    "success": false
    }
   ]
  },
@@ -200,6 +228,20 @@
     "label": null,
     "duration": 1192.7,
     "success": true
+   },
+   {
+    "id": "plexil_l4_pdu1",
+    "system": "plexil",
+    "label": null,
+    "duration": 475.2,
+    "success": false
+   },
+   {
+    "id": "europa_l4_pdu1",
+    "system": "europa",
+    "label": null,
+    "duration": 474.6,
+    "success": false
    }
   ]
  },
@@ -217,6 +259,20 @@
     "label": null,
     "duration": 1599.5,
     "success": true
+   },
+   {
+    "id": "plexil_l2b_habitat",
+    "system": "plexil",
+    "label": null,
+    "duration": 755.6,
+    "success": false
+   },
+   {
+    "id": "europa_l2b_habitat",
+    "system": "europa",
+    "label": null,
+    "duration": 865.0,
+    "success": false
    }
   ]
  },
@@ -227,7 +283,15 @@
   "title": "Restore BESS",
   "condition": "A battery-module fault is followed by an overheating trip after replacement and reset.",
   "keywords": "bess sequential second fault after replacement compound overheating battery",
-  "runs": []
+  "runs": [
+   {
+    "id": "ours_compound_bess_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 2286.6,
+    "success": true
+   }
+  ]
  },
  {
   "id": "serial-mislocated",
@@ -236,7 +300,22 @@
   "title": "Deliver ORU-0417 to PDU-3",
   "condition": "The item's physical location differs from the inventory record.",
   "keywords": "serial number oru-0417 mislocated wrong place record label scan",
-  "runs": []
+  "runs": [
+   {
+    "id": "post_ours_h1_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 2510.3,
+    "success": true
+   },
+   {
+    "id": "pre_ours_h1",
+    "system": "thoth",
+    "label": "Thoth \u00b7 before serial reading",
+    "duration": 515.5,
+    "success": false
+   }
+  ]
  },
  {
   "id": "serial-swapped",
@@ -245,6 +324,21 @@
   "title": "Deliver ORU-0417 to PDU-1",
   "condition": "Inventory records for two visually similar items are exchanged.",
   "keywords": "serial number oru-0417 swapped exchanged records label scan",
-  "runs": []
+  "runs": [
+   {
+    "id": "post_ours_h2_r1",
+    "system": "thoth",
+    "label": null,
+    "duration": 889.4,
+    "success": true
+   },
+   {
+    "id": "pre_ours_h2",
+    "system": "thoth",
+    "label": "Thoth \u00b7 before serial reading",
+    "duration": 459.6,
+    "success": false
+   }
+  ]
  }
 ]

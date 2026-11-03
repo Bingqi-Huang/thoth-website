@@ -164,7 +164,9 @@ export class MissionConsole {
     $("hud-sys").textContent = `${name} · recorded run`;
     const mission = run.events.find(e => e.k === "mission_received");
     $("mission-text").textContent = mission ? mission.text : `${sc.title}. ${sc.condition}`;
-    if (system !== "thoth") $("plan").innerHTML = `<li class="muted">${system === "plexil" ? "Authored procedure: fixed steps, see the loop." : "Plans come from the EUROPA task domain, see the loop."}</li>`;
+    $("plan-h").textContent = system === "thoth" ? "Working plan" : system === "plexil" ? "Procedure" : "Planner output";
+    $("plan-hint").textContent = system === "thoth" ? "written by the agent" : system === "plexil" ? "authored before the mission" : "from the EUROPA task domain";
+    $("units-strip").style.display = run.events.some(e => e.units) ? "" : "none";
     this.renderTabs();
     this.map.setRun(run);
     this.renderMarks();
@@ -289,6 +291,7 @@ export class MissionConsole {
       if (!units && e.units) units = e;
     }
     if (run.system === "thoth") this.renderPlan(plan ? plan.plan : [], prevIdx >= 0);
+    else this.renderBaselinePlan(idx);
     this.renderUnits(units ? units.units : null, prevIdx >= 0);
     // feed
     const visible = this.items.filter(i => i.t <= t).length;
@@ -355,6 +358,26 @@ export class MissionConsole {
     this.planIds = ids;
     const act = ol.querySelector("li.active") as HTMLElement | null;
     if (act) ol.scrollTop = act.offsetTop - ol.offsetTop - 40;
+  }
+
+  renderBaselinePlan(idx: number) {
+    const ev = this.run!.events.slice(0, idx);
+    let html = "";
+    if (this.run!.system === "plexil") {
+      const st = new Map<string, string>();
+      for (const e of ev) if (e.k === "node") st.set(e.name, e.state === "FINISHED" ? "done" : "active");
+      html = [...st].map(([n, s]) => `<li class="${s}">${esc(n)}</li>`).join("");
+    } else {
+      const plan = ev.filter(e => e.k === "plan").pop();
+      if (plan) {
+        const done = ev.filter(e => e.k === "result" && e.t >= plan.t).length;
+        html = plan.steps.length ? plan.steps.map((s: string, i: number) => `<li class="${i < done ? "done" : i === done ? "active" : "pending"}">${esc(s.replace(/_/g, " "))}</li>`).join("")
+          : `<li class="failed">No plan reaches the goal from the observed state.</li>`;
+      }
+    }
+    if (ev.some(e => e.k === "escalate")) html += `<li class="blocked">Holding: new procedure requested from mission control</li>`;
+    const key = html;
+    if ($("plan").dataset.key !== key) { $("plan").innerHTML = html || `<li class="muted">Starting.</li>`; $("plan").dataset.key = key; }
   }
 
   renderUnits(units: Record<string, Unit> | null, animate: boolean) {
@@ -439,7 +462,8 @@ export class MissionConsole {
       case "execution_started": return row("execute", `<span class="pill run">dispatched</span>`);
       case "execution_finished": return row("skill", `<span class="pill ${s.ok ? "ok" : "fail"}">${s.ok ? "reported success" : "reported failure"}</span> ${esc((s.fail || "").slice(0, 200))}` +
         (s.serials ? ` serials read: ${esc(s.serials.join(", ") || "none")}` : "")) + (s.img ? `<img loading="lazy" src="${s.img}" alt="">` : "");
-      case "result": return row("skill", `<span class="pill ${s.ok ? "ok" : "fail"}">${s.ok ? "success" : "failure"}</span> ${esc((s.fail || "").slice(0, 200))}`);
+      case "result": return row("skill", `<span class="pill ${s.ok ? "ok" : "fail"}">${s.ok ? "success" : "failure"}</span> ${esc((s.fail || "").slice(0, 200))}`) +
+        row("effect", `<span class="muted">no independent effect judgment</span>`);
       case "effect_verified": {
         const facts = Object.entries(s.facts || {}).slice(0, 4).map(([k, v]) => `${k.replace(/_/g, " ")} ${typeof v === "number" ? +(+v).toFixed(3) : v}`).join(" · ");
         return row("effect", `<span class="pill ${s.verdict}">${s.verdict}</span> ${esc(s.effect.replace(/_/g, " "))}${facts ? `<br><span class="muted">${esc(facts)}</span>` : ""}`);
