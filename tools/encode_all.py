@@ -19,7 +19,7 @@ if os.environ.get("REVERSE"):
     runs.reverse()
 for r in runs:
         rid = Path(r["dir"]).name
-        if any((B / "video" / f"{rid}.{k}.part.mp4").exists() for k in ("av1", "hevc") if which in (k, "both")):
+        if any((B / "video" / f"{rid}.{k}.part.mp4").exists() for k in ("av1", "hevc", "sd") if which in (k, "both")):
             continue
         if r["replay"].startswith(str(B)) and f" done {rid} " not in done_log:
             continue

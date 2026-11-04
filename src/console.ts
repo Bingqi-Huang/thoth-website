@@ -91,10 +91,13 @@ export class MissionConsole {
     tl.addEventListener("pointermove", ev => { if (drag) seek(ev); });
     tl.addEventListener("pointerup", () => { drag = false; });
     this.video.addEventListener("ended", () => this.setPlaying(false));
+    this.video.addEventListener("error", () => { if (this.run && this.video.getAttribute("src")) { this.stalls++; this.setSource(this.video.currentTime || 0, this.stalls); } });
+    $("cam").addEventListener("error", () => { const c = $<HTMLVideoElement>("cam"); const t = c.currentTime; c.src = c.src.split("?")[0] + `?r=${Date.now() % 1000}`; c.onloadedmetadata = () => { c.currentTime = t; }; });
     const feed = $("feed");
     feed.addEventListener("wheel", () => requestAnimationFrame(() => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }), { passive: true });
     feed.addEventListener("touchmove", () => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }, { passive: true });
     feed.addEventListener("click", ev => { const c = (ev.target as HTMLElement).closest(".clamp"); if (c) { c.classList.toggle("open"); this.stick = false; } });
+    $("q-btn").onclick = () => { if (!this.run) return; this.light = !this.light; this.setSource(this.video.currentTime, 0); };
     $("auth-grant").onclick = () => this.closeAuth(true);
     $("auth-later").onclick = () => this.closeAuth(false);
     document.addEventListener("keydown", ev => {
@@ -108,18 +111,79 @@ export class MissionConsole {
     requestAnimationFrame(loop);
   }
 
-  camSeekAt = 0;
+  // The two camera windows are one stacked video (front over wrist), drawn into two canvases. It plays alongside the
+  // replay at the same rate and is only re-seeked when it drifts, so it costs one download and almost no requests.
   syncCams(t: number, force: boolean) {
     const run = this.run!;
     if (!run.cams) return;
-    const now = performance.now();
-    if (!force && now - this.camSeekAt < 150) return;
+    const c = $<HTMLVideoElement>("cam");
     const target = Math.max(0, t - run.cams.t0);
-    for (const id of ["cam-front", "cam-wrist"]) {
-      const c = $<HTMLVideoElement>(id);
-      if (c.readyState >= 1 && Math.abs(c.currentTime - target) >= 0.5) c.currentTime = target;
+    if (c.readyState >= 1) {
+      if (c.playbackRate !== this.video.playbackRate) c.playbackRate = this.video.playbackRate;
+      const shouldPlay = !this.video.paused && !this.stalled;
+      if (shouldPlay && c.paused) c.play().catch(() => {});
+      if (!shouldPlay && !c.paused) c.pause();
+      if (force || Math.abs(c.currentTime - target) > 1.5) c.currentTime = target;
     }
-    this.camSeekAt = now;
+  }
+  drawCams() {
+    const c = $<HTMLVideoElement>("cam");
+    if (!this.run?.cams || c.readyState < 2) return;
+    for (const [id, y] of [["cam-front", 0], ["cam-wrist", 360]] as [string, number][]) {
+      ($(id) as unknown as HTMLCanvasElement).getContext("2d")!.drawImage(c, 0, y, 480, 360, 0, 0, 480, 360);
+    }
+  }
+
+  // Source choice and stall recovery. The media host hands out signed links that expire; a player that keeps using
+  // an expired link stalls for good, so a stall of more than a few seconds or an error reloads the source where it was.
+  // Two stalls in one replay switch to the light 960x540 version for the rest of the visit.
+  light = false;
+  stalled = false;
+  stallSince = 0;
+  stalls = 0;
+  lastProgress = 0;
+  lastVT = -1;
+  srcFor(run: Run) {
+    const v = this.video, b = `${VIDEO_BASE}${run.id}`;
+    if (this.light) return `${b}.sd.mp4`;
+    if (v.canPlayType('video/mp4; codecs="av01.0.08M.08"') === "probably") return `${b}.av1.mp4`;
+    if (v.canPlayType('video/mp4; codecs="hvc1.1.6.L120.90"')) return `${b}.hevc.mp4`;
+    return `${b}.sd.mp4`;
+  }
+  setSource(resume: number | null, retry = 0) {
+    const run = this.run!, v = this.video;
+    $("q-btn").textContent = this.light ? "SD" : "HD";
+    v.removeAttribute("src");
+    v.src = this.srcFor(run) + (retry ? `?r=${retry}` : "");
+    v.playbackRate = this.rate;
+    v.onloadedmetadata = () => {
+      v.playbackRate = this.rate;
+      if (resume !== null) v.currentTime = resume;
+      if (this.playing) v.play().catch(() => {});
+    };
+    this.lastProgress = performance.now();
+  }
+  winStart = 0;
+  winStalled = 0;
+  lastTick = 0;
+  watchdog() {
+    const v = this.video, now = performance.now(), dt = now - (this.lastTick || now);
+    this.lastTick = now;
+    if (!this.playing || v.ended || !$("auth").hidden) { this.stalled = false; $("hud-buf").classList.remove("on"); this.lastProgress = now; this.winStart = now; this.winStalled = 0; return; }
+    if (v.currentTime !== this.lastVT) { this.lastVT = v.currentTime; this.lastProgress = now; }
+    this.stalled = now - this.lastProgress > 600;
+    $("hud-buf").classList.toggle("on", this.stalled);
+    // the link cannot keep up: over a 20 s window, more than a quarter of it spent waiting
+    if (this.stalled) this.winStalled += dt;
+    if (now - this.winStart > 20000) {
+      if (this.winStalled > 5000 && !this.light) { this.light = true; this.setSource(v.currentTime, 0); }
+      this.winStart = now; this.winStalled = 0;
+    }
+    if (now - this.lastProgress > 5000) {
+      this.stalls++;
+      if (this.stalls >= 2 && !this.light) this.light = true;
+      this.setSource(v.currentTime, this.stalls);
+    }
   }
 
   stick = true;
@@ -170,21 +234,13 @@ export class MissionConsole {
     this.renderTabs();
     this.map.setRun(run);
     this.renderMarks();
-    const v = this.video;
-    v.pause();
-    v.innerHTML = `<source src="${VIDEO_BASE}${run.id}.av1.mp4" type='video/mp4; codecs="av01.0.08M.08"'>` +
-      `<source src="${VIDEO_BASE}${run.id}.hevc.mp4" type='video/mp4; codecs="hvc1"'>` +
-      `<source src="${VIDEO_BASE}${run.id}.mp4" type="video/mp4">`;
-    v.load();
-    v.playbackRate = this.rate;
-    v.onloadedmetadata = () => { v.playbackRate = this.rate; };
+    this.video.pause();
+    this.stalls = 0;
+    this.setSource(null);
     const cams = $("cams");
     cams.classList.toggle("off", !run.cams);
-    for (const id of ["cam-front", "cam-wrist"]) {
-      const c = $<HTMLVideoElement>(id);
-      c.src = run.cams ? `${VIDEO_BASE}cams/${run.id}.mp4` : "";
-    }
-    this.camSeekAt = 0;
+    const cam = $<HTMLVideoElement>("cam");
+    cam.src = run.cams ? `${VIDEO_BASE}cams/${run.id}.mp4` : "";
     this.lastT = run.video.t0;
     this.update(run.video.t0, true);
     if (autoplay) { this.setPlaying(true); }
@@ -252,6 +308,8 @@ export class MissionConsole {
 
   tick() {
     if (!this.run) return;
+    this.watchdog();
+    this.drawCams();
     const t = this.simTime();
     if (Math.abs(t - this.lastT) > 1e-3) this.update(t, false);
   }

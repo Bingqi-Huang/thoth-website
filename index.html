@@ -91,13 +91,15 @@
           <div class="hud-tr"><span id="hud-sys"></span></div>
           <div id="hud-op" class="hud-op"></div>
           <div id="hud-flash" class="hud-flash"></div>
+          <div id="hud-buf" class="hud-buf"><i></i>buffering</div>
         </div>
         <div class="stage-empty" id="stage-empty">
           <p>Choose a mission to begin.</p>
         </div>
         <div id="cams" class="cams">
-          <div class="cam"><video id="cam-front" muted playsinline preload="auto"></video><span>Front camera</span></div>
-          <div class="cam"><video id="cam-wrist" muted playsinline preload="auto"></video><span>Wrist camera</span></div>
+          <video id="cam" class="cam-src" muted playsinline preload="auto"></video>
+          <div class="cam"><canvas id="cam-front" width="480" height="360"></canvas><span>Front camera</span></div>
+          <div class="cam"><canvas id="cam-wrist" width="480" height="360"></canvas><span>Wrist camera</span></div>
         </div>
         <svg id="minimap" class="minimap" viewBox="0 0 100 100" aria-label="Site map"></svg>
       </div>
@@ -106,6 +108,7 @@
         <button id="prev-ev" class="icon-btn" aria-label="Previous event"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
         <button id="next-ev" class="icon-btn" aria-label="Next event"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
         <div id="timeline" class="timeline"><div id="tl-fill" class="tl-fill"></div><div id="tl-marks" class="tl-marks"></div><div id="tl-head" class="tl-head"></div></div>
+        <button id="q-btn" class="q-btn" title="Video quality: HD 1600×900, or a lighter 960×540 for slow links">HD</button>
         <div class="speed">
           <input id="speed" type="range" min="0" max="1000" value="600" aria-label="Playback speed">
           <span id="speed-val">×4</span>

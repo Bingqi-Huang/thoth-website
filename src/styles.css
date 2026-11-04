@@ -193,8 +193,12 @@ p { margin: 0; }
 .hud-flash.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .cams { position: absolute; right: 14px; top: 56px; width: 44%; max-width: 400px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cam { position: relative; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-2); background: #000; }
-.cam video { position: absolute; left: 0; top: 0; width: 100%; height: auto; display: block; }
-#cam-wrist { transform: translateY(-50%); }
+.cam canvas { width: 100%; height: 100%; display: block; }
+.cam-src { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.hud-buf { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: none; gap: 8px; align-items: center; padding: 6px 12px; border-radius: 8px; background: rgba(5,7,11,.7); color: var(--text-2); font: 500 11.5px var(--mono); }
+.hud-buf.on { display: inline-flex; }
+.hud-buf i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--text-3); border-top-color: var(--text); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .cam span { position: absolute; left: 8px; top: 6px; font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text); background: rgba(5,7,11,.6); padding: 2px 6px; border-radius: 4px; }
 .cams.off { display: none; }
 .minimap { position: absolute; right: 14px; bottom: 14px; width: 180px; height: 180px; border-radius: 10px; background: rgba(5,7,11,.62); backdrop-filter: blur(8px); border: 1px solid var(--line); }
@@ -221,6 +225,8 @@ p { margin: 0; }
 .tl-marks i.earth { background: var(--earth); }
 .tl-marks i.plan { background: var(--model); height: 8px; top: 11px; opacity: .6; }
 .tl-marks i.cutoff { background: transparent; border-left: 1px dashed var(--text-3); width: 0; height: 26px; top: 2px; }
+.q-btn { flex: none; font: 500 10.5px var(--mono); letter-spacing: .06em; color: var(--text-2); background: transparent; border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 7px; cursor: pointer; }
+.q-btn:hover { color: var(--text); }
 .speed { display: flex; align-items: center; gap: 8px; width: 170px; flex: none; }
 .speed input { width: 110px; accent-color: var(--text); }
 #speed-val { font: 500 12px var(--mono); color: var(--text-2); width: 44px; text-align: right; }
