@@ -91,13 +91,17 @@ export class MissionConsole {
     tl.addEventListener("pointermove", ev => { if (drag) seek(ev); });
     tl.addEventListener("pointerup", () => { drag = false; });
     this.video.addEventListener("ended", () => this.setPlaying(false));
-    this.video.addEventListener("error", () => { if (this.run && this.video.getAttribute("src")) { this.stalls++; this.setSource(this.video.currentTime || 0, this.stalls); } });
+    this.video.addEventListener("error", () => {
+      if (!this.run || !this.video.getAttribute("src") || this.retryTimer) return;
+      if (this.light && this.video.src.includes(".sd.mp4") && this.video.readyState === 0) { this.light = false; this.noLight = true; }
+      this.recover();
+    });
     $("cam").addEventListener("error", () => { const c = $<HTMLVideoElement>("cam"); const t = c.currentTime; c.src = c.src.split("?")[0] + `?r=${Date.now() % 1000}`; c.onloadedmetadata = () => { c.currentTime = t; }; });
     const feed = $("feed");
     feed.addEventListener("wheel", () => requestAnimationFrame(() => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }), { passive: true });
     feed.addEventListener("touchmove", () => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }, { passive: true });
     feed.addEventListener("click", ev => { const c = (ev.target as HTMLElement).closest(".clamp"); if (c) { c.classList.toggle("open"); this.stick = false; } });
-    $("q-btn").onclick = () => { if (!this.run) return; this.light = !this.light; this.setSource(this.video.currentTime, 0); };
+    $("q-btn").onclick = () => { if (!this.run) return; this.light = !this.light; this.setSource(this.lastT - this.run.video.t0, 0); };
     $("auth-grant").onclick = () => this.closeAuth(true);
     $("auth-later").onclick = () => this.closeAuth(false);
     document.addEventListener("keydown", ev => {
@@ -138,6 +142,7 @@ export class MissionConsole {
   // an expired link stalls for good, so a stall of more than a few seconds or an error reloads the source where it was.
   // Two stalls in one replay switch to the light 960x540 version for the rest of the visit.
   light = false;
+  noLight = false;
   stalled = false;
   stallSince = 0;
   stalls = 0;
@@ -150,6 +155,19 @@ export class MissionConsole {
     if (v.canPlayType('video/mp4; codecs="hvc1.1.6.L120.90"')) return `${b}.hevc.mp4`;
     return `${b}.sd.mp4`;
   }
+  // Reload the source where the replay was (a fresh request gets a fresh signed link), backing off 1, 2, 4 ... 15 s
+  // between attempts and never giving up; the replay's clock holds still meanwhile.
+  recovering = false;
+  retryTimer = 0;
+  retries = 0;
+  recover() {
+    const at = this.lastT - this.run!.video.t0;
+    this.recovering = true;
+    $("hud-buf").classList.add("on");
+    const wait = Math.min(15000, 1000 * 2 ** this.retries);
+    this.retries++;
+    this.retryTimer = window.setTimeout(() => { this.retryTimer = 0; this.setSource(at, this.retries); }, this.retries === 1 ? 0 : wait);
+  }
   setSource(resume: number | null, retry = 0) {
     const run = this.run!, v = this.video;
     $("q-btn").textContent = this.light ? "SD" : "HD";
@@ -159,6 +177,7 @@ export class MissionConsole {
     v.onloadedmetadata = () => {
       v.playbackRate = this.rate;
       if (resume !== null) v.currentTime = resume;
+      this.recovering = false;
       if (this.playing) v.play().catch(() => {});
     };
     this.lastProgress = performance.now();
@@ -170,19 +189,19 @@ export class MissionConsole {
     const v = this.video, now = performance.now(), dt = now - (this.lastTick || now);
     this.lastTick = now;
     if (!this.playing || v.ended || !$("auth").hidden) { this.stalled = false; $("hud-buf").classList.remove("on"); this.lastProgress = now; this.winStart = now; this.winStalled = 0; return; }
-    if (v.currentTime !== this.lastVT) { this.lastVT = v.currentTime; this.lastProgress = now; }
+    if (v.currentTime !== this.lastVT) { this.lastVT = v.currentTime; this.lastProgress = now; if (!this.recovering && v.readyState >= 3) this.retries = 0; }
     this.stalled = now - this.lastProgress > 600;
     $("hud-buf").classList.toggle("on", this.stalled);
     // the link cannot keep up: over a 20 s window, more than a quarter of it spent waiting
     if (this.stalled) this.winStalled += dt;
     if (now - this.winStart > 20000) {
-      if (this.winStalled > 5000 && !this.light) { this.light = true; this.setSource(v.currentTime, 0); }
+      if (this.winStalled > 5000 && !this.light && !this.noLight && !this.recovering) { this.light = true; this.setSource(this.lastT - this.run!.video.t0, 0); }
       this.winStart = now; this.winStalled = 0;
     }
-    if (now - this.lastProgress > 5000) {
+    if (now - this.lastProgress > 6000 && !this.retryTimer) {
       this.stalls++;
-      if (this.stalls >= 2 && !this.light) this.light = true;
-      this.setSource(v.currentTime, this.stalls);
+      if (this.stalls >= 2 && !this.light && !this.noLight) this.light = true;
+      this.recover();
     }
   }
 
@@ -235,7 +254,8 @@ export class MissionConsole {
     this.map.setRun(run);
     this.renderMarks();
     this.video.pause();
-    this.stalls = 0;
+    this.stalls = 0; this.retries = 0; this.recovering = false;
+    clearTimeout(this.retryTimer); this.retryTimer = 0;
     this.setSource(null);
     const cams = $("cams");
     cams.classList.toggle("off", !run.cams);
@@ -309,6 +329,7 @@ export class MissionConsole {
   tick() {
     if (!this.run) return;
     this.watchdog();
+    if (this.recovering) return;
     this.drawCams();
     const t = this.simTime();
     if (Math.abs(t - this.lastT) > 1e-3) this.update(t, false);
