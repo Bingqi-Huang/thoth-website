@@ -391,7 +391,7 @@ p { margin: 0; }
   .console { grid-template-columns: minmax(0, 1fr); }
   .c-left { grid-template-columns: 1fr; }
   .c-right { contain: none; height: 520px; }
-  .minimap { width: 92px; height: 92px; right: 8px; bottom: 8px; }
+  .minimap { display: none; }
   .hud-tr { display: none; }
   .cams { width: 46%; top: 40px; right: 8px; gap: 4px; } .cam span { display: none; }
   .hud-tl { top: 8px; left: 8px; padding: 5px 9px; gap: 8px; font-size: 10.5px; }
