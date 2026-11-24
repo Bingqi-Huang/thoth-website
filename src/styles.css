@@ -127,7 +127,13 @@ p { margin: 0; }
 .chip .g { color: var(--text-3); margin-right: 6px; font: 11px var(--mono); }
 .match-note { min-height: 22px; margin-top: 12px; font: 13px var(--mono); color: var(--text-3); }
 .match-note b { color: var(--text-2); font-weight: 500; }
-.cn-note { margin: 0 0 20px; padding: 12px 16px; max-width: 900px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); color: var(--text-2); font-size: 13.5px; line-height: 1.6; }
+.cn-note { display: flex; gap: 12px; align-items: flex-start; max-width: 900px; margin: 0 0 14px; padding: 14px 18px 14px 16px;
+  background: rgba(243, 165, 60, 0.09); border: 1px solid rgba(243, 165, 60, 0.22); border-left: 4px solid var(--hold); border-radius: 12px;
+  color: var(--text); font-size: 16px; line-height: 1.55; }
+.cn-note strong { color: var(--hold); font-weight: 600; }
+.cn-icon { flex: none; margin-top: 2px; color: var(--hold); }
+.cn-note p { margin: 0; }
+@media (max-width: 860px) { .cn-note { font-size: 15px; padding: 12px 14px 12px 12px; gap: 10px; } }
 
 /* console */
 .console { display: grid; grid-template-columns: 260px minmax(0, 1fr) 380px; gap: 12px; align-items: stretch; }
