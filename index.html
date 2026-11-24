@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thoth · Safe execution of foundation-model plans on lunar robots</title>
+<meta name="description" content="Thoth executes foundation-model plans on a lunar-base rover with asymmetric knowledge-level replanning (AKR): reversible actions run on the planner's assumptions, irreversible actions only after sensing has verified every precondition.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#top"><span class="brand-mark"></span>Thoth</a>
+  <nav>
+    <a href="#console">Console</a>
+    <a href="#method">Method</a>
+    <a href="#scenarios">Scenarios</a>
+    <a href="#results">Results</a>
+    <a href="#start">Get started</a>
+  </nav>
+  <div class="nav-ext">
+    <a class="ext" href="https://bingqi-huang.github.io/" target="_blank" rel="noopener">Author</a>
+    <a class="ext gh" href="https://github.com/Bingqi-Huang/thoth-lunar-agent" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="media/hero.webp">
+    <source src="media/hero.mp4" type="video/mp4">
+  </video>
+  <div class="hero-shade"></div>
+  <div class="hero-inner">
+    <p class="eyebrow">Open-source executor · Lunar surface robotics</p>
+    <h1>Thoth</h1>
+    <p class="lede">A foundation-model planner repairs equipment and delivers cargo on a lunar base without being trusted. Thoth runs reversible actions on the planner's assumptions and an irreversible action only after sensing has verified every precondition: asymmetric knowledge-level replanning (AKR).</p>
+    <div class="cta">
+      <a class="btn primary" href="#console">Run a mission</a>
+      <a class="btn" href="https://github.com/Bingqi-Huang/thoth-lunar-agent" target="_blank" rel="noopener">View the code</a>
+    </div>
+    <dl class="stats">
+      <div><dt>Any planner</dt><dd>With sound measurements, no irreversible action runs on a false precondition, whatever the planner proposes and whatever the records say.</dd></div>
+      <div><dt>Least sensing</dt><dd>Before an irreversible action, Thoth senses only what is still undecided, at the lowest cost that decides it before its deadline.</dd></div>
+      <div><dt>Verified or held</dt><dd>A run ends with the goal verified, or in a certified hold that names the action no safe policy could execute.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="console" class="section wide">
+  <div class="section-head">
+    <p class="eyebrow">Mission console</p>
+    <h2>Give LunarBot a mission</h2>
+    <p class="sub">Pick a mission or describe one. The console replays a recorded simulation run of Thoth that matches it: the rover, the planner's proposals, the admissibility decisions and the evidence judgments, on one mission clock.</p>
+    <p class="sub note">Replays are recorded Thoth runs from the first evaluation on the same base.</p>
+  </div>
+  <div class="prompt">
+    <div class="prompt-box">
+      <span class="prompt-caret">›</span>
+      <input id="prompt-input" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. PDU-1 reported a fault, no spare module in storage">
+      <button id="prompt-run" class="btn primary small">Run</button>
+    </div>
+    <div id="prompt-chips" class="chips"></div>
+    <p id="match-note" class="match-note"></p>
+  </div>
+
+  <div id="con" class="console idle">
+    <div class="c-left">
+      <div class="panel">
+        <div class="panel-h"><span>Mission</span><span id="sys-badge" class="badge"></span></div>
+        <p id="mission-text" class="mission-text">No mission loaded.</p>
+      </div>
+      <div class="panel grow">
+        <div class="panel-h"><span id="plan-h">Working plan</span><span class="hint" id="plan-hint">written by the planner</span></div>
+        <ol id="plan" class="plan"></ol>
+      </div>
+    </div>
+
+    <div class="c-mid">
+      <div class="stage">
+        <video id="video" playsinline muted preload="auto"></video>
+        <div class="hud">
+          <div class="hud-tl">
+            <span class="hud-clock" id="hud-clock">T+00:00</span>
+            <span class="hud-sep"></span>
+            <span id="hud-link" class="hud-link">Earth link</span>
+          </div>
+          <div class="hud-tr"><span id="hud-sys"></span></div>
+          <div id="hud-op" class="hud-op"></div>
+          <div id="hud-flash" class="hud-flash"></div>
+          <div id="hud-buf" class="hud-buf"><i></i>buffering</div>
+        </div>
+        <div class="stage-empty" id="stage-empty">
+          <p>Choose a mission to begin.</p>
+        </div>
+        <div id="cams" class="cams">
+          <video id="cam" class="cam-src" muted playsinline preload="auto"></video>
+          <div class="cam"><canvas id="cam-front" width="480" height="360"></canvas><span>Front camera</span></div>
+          <div class="cam"><canvas id="cam-wrist" width="480" height="360"></canvas><span>Wrist camera</span></div>
+        </div>
+        <svg id="minimap" class="minimap" viewBox="0 0 100 100" aria-label="Site map"></svg>
+      </div>
+      <div class="transport">
+        <button id="play" class="icon-btn" aria-label="Play"><svg viewBox="0 0 24 24"><path id="play-icon" d="M8 5v14l11-7z"/></svg></button>
+        <button id="prev-ev" class="icon-btn" aria-label="Previous event"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+        <button id="next-ev" class="icon-btn" aria-label="Next event"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+        <div id="timeline" class="timeline"><div id="tl-fill" class="tl-fill"></div><div id="tl-marks" class="tl-marks"></div><div id="tl-head" class="tl-head"></div></div>
+        <button id="q-btn" class="q-btn" title="Video quality: HD 1600×900, or a lighter 960×540 for slow links">HD</button>
+        <div class="speed">
+          <input id="speed" type="range" min="0" max="1000" value="600" aria-label="Playback speed">
+          <span id="speed-val">×4</span>
+        </div>
+      </div>
+      <div class="under">
+        <div id="sys-tabs" class="sys-tabs"></div>
+        <div class="units-strip" id="units-strip"><span class="us-k">Telemetry</span><div id="units" class="units"></div></div>
+      </div>
+    </div>
+
+    <div class="c-right">
+      <div class="panel grow feed-panel">
+        <div class="panel-h"><span>Execution loop</span><span class="legend"><i class="lg allow"></i>admitted <i class="lg hold"></i>withheld <i class="lg verified"></i>verified <i class="lg refuted"></i>refuted <i class="lg unverified"></i>unverified</span></div>
+        <div id="feed" class="feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth" class="auth" hidden>
+    <div class="auth-card">
+      <p class="eyebrow warn">Ground authorization requested</p>
+      <h3 id="auth-title"></h3>
+      <p id="auth-reason" class="auth-reason"></p>
+      <pre id="auth-text" class="auth-text"></pre>
+      <p class="auth-note">You are mission control. The reply reaches the rover over the Earth link; the rover keeps working meanwhile.</p>
+      <div class="auth-actions">
+        <button id="auth-grant" class="btn primary">Grant this operation</button>
+        <button id="auth-later" class="btn">Watch without deciding</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="method" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Method</p>
+    <h2>Asymmetric knowledge-level replanning</h2>
+    <p class="sub">Lunar-base maintenance and logistics are cast as safety-constrained contingent planning. AKR treats the foundation-model planner as an untrusted black box and applies one admissibility rule whose strength depends on the action class: acting on an assumption is acceptable when a false assumption costs only time, and acting on verified knowledge is required when an effect cannot be undone.</p>
+  </div>
+  <figure class="paper-fig">
+    <a href="media/figures/fig_overview.webp" target="_blank" rel="noopener"><img src="media/figures/fig_overview.webp" alt="An unforeseen fault at an uncrewed lunar outpost, under existing autonomy and under AKR" loading="lazy"></a>
+    <figcaption>An unforeseen fault at an uncrewed lunar outpost: pre-validated procedures stop, a planner acting on unverified assumptions removes a module before Earth replies, and AKR repairs the unit with the removal made only on verified knowledge.</figcaption>
+  </figure>
+
+  <div class="model">
+    <div>
+      <h3 class="block-h">Safety-constrained contingent planning</h3>
+      <p class="sub small">Four departures from classical contingent planning, each present on the lunar base.</p>
+      <dl class="model-list">
+        <div><dt>Potentially erroneous records</dt><dd>Trusted knowledge (surveyed units, supports and routes) is separated from the inventory record, which may be wrong in every entry. The record reaches the planner as default hypotheses and never enters the knowledge state.</dd></div>
+        <div><dt>Three-valued physical evidence</dt><dd>After each action, independent measurements judge every effect <em class="c-verified">verified</em>, <em class="c-refuted">refuted</em> or <em class="c-unverified">unverified</em>. An inconclusive measurement leaves the proposition undecided instead of forcing a guess.</dd></div>
+        <div><dt>Irreversible actions</dt><dd>Removing a module from a unit not verified to be de-energized damages its connector, and a handed-over cargo cannot be taken back. The rover has no skill that undoes either.</dd></div>
+        <div><dt>Costly, deadline-constrained sensing</dt><dd>A serial-plate read costs seconds; a ground request costs minutes and must start early enough for the reply to arrive before Earth sets, so ground authorization is a sensing action with a deadline.</dd></div>
+      </dl>
+    </div>
+    <figure class="paper-fig">
+      <a href="media/figures/fig_platform.webp" target="_blank" rel="noopener"><img src="media/figures/fig_platform.webp" alt="The simulated south-polar outpost, the rover LunarBot and a serviced unit" loading="lazy"></a>
+      <figcaption>The simulated platform: the south-polar site, the outpost and its equipment, the rover LunarBot, the interfaces of a serviced unit, and four physical operations of the rover.</figcaption>
+    </figure>
+  </div>
+
+  <h3 class="block-h" id="how">One episode of the execution loop</h3>
+  <div class="how">
+    <ol class="how-steps" id="how-steps">
+      <li data-step="0"><span class="n">01</span><h3>Propose</h3><p>The planner receives the goal, the knowledge state, the remaining record entries as default hypotheses and the executor's feedback, and returns the next steps. Nothing it asserts is written into the knowledge state, so a hallucinated belief or a premature completion report changes nothing.</p></li>
+      <li data-step="1"><span class="n">02</span><h3>Admit</h3><p>A reversible action is <em class="c-allow">admitted</em> unless a precondition is known false, and each undecided precondition may be tried unverified only once. An irreversible action is admitted only when every precondition is known true, including the ground grant of a restricted operation; otherwise it is <em class="c-hold">withheld</em>.</p></li>
+      <li data-step="2"><span class="n">03</span><h3>Sense, then act</h3><p>For a withheld irreversible action, Thoth computes the minimum-cost sequence of sensing actions that decides its undecided preconditions before their deadlines and runs it first. If no such sequence exists, the run ends in a certified hold. Admitted actions run as registered robot skills.</p></li>
+      <li data-step="3"><span class="n">04</span><h3>Judge</h3><p>Evidence rules apply to measurements such as jaw closure, lift, optical flow, pose and camera frames, never to a controller's completion flag: <em class="c-verified">verified</em>, <em class="c-refuted">refuted</em> or <em class="c-unverified">unverified</em>. Only these judgments and sensing update the knowledge state, and success requires the goal to be known true.</p></li>
+    </ol>
+    <div class="how-figure">
+      <svg id="how-svg" viewBox="0 0 520 440" role="img" aria-label="Execution loop diagram"></svg>
+      <div id="how-sample" class="how-sample"></div>
+    </div>
+  </div>
+
+  <h3 class="block-h" id="guarantees">Three guarantees</h3>
+  <figure class="paper-fig method-fig">
+    <a href="media/figures/fig_method.webp" target="_blank" rel="noopener"><img src="media/figures/fig_method.webp" alt="AKR between the foundation-model planner and the rover" loading="lazy"></a>
+    <figcaption>AKR between the foundation-model planner and the rover, shown on a reversible and an irreversible action of a repair.</figcaption>
+  </figure>
+  <div class="rule">
+    <span class="rule-k">Admissibility</span>
+    <span class="rule-v"><b>reversible</b>: no precondition known false, each guess once</span>
+    <span class="rule-v"><b>irreversible</b>: every precondition known true, after a minimum-cost sensing cover</span>
+  </div>
+  <div class="thms">
+    <article class="thm"><span class="t-k c-verified">Soundness</span><h3>Safe for any planner</h3><p>Under sound measurements, no irreversible action executes on a false precondition, for any planner and any inventory record, and a restricted action executes only after its ground grant has been observed.</p></article>
+    <article class="thm"><span class="t-k c-allow">Cost</span><h3>The least sensing safety requires</h3><p>Before an irreversible action, every sound knowledge-based policy pays at least the minimum cost of deciding its undecided preconditions, and the sensing cover of AKR pays exactly that whenever no actuation effect can replace a sensor.</p></article>
+    <article class="thm"><span class="t-k c-hold">Completion</span><h3>Verified goal or certified hold</h3><p>With a complete planner and skills that succeed and judge conclusively with positive probability, every run terminates, with the goal verified or in a certified hold.</p></article>
+  </div>
+  <p class="sub small hold-note">A <b>certified hold</b> names the blocked irreversible action and proves that no sound knowledge-based policy could execute it for the rest of the mission, for example when Earth sets before a ground reply could arrive. A conventional procedural halt says only that the authored branches ran out.</p>
+</section>
+
+<section id="scenarios" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Scenario library</p>
+    <h2>Lunar-base missions</h2>
+    <p class="sub">Maintenance and delivery on a simulated south-pole base: three power distribution units, a battery store, an oxygen plant and storage supports. Each card opens its recorded run in the console.</p>
+  </div>
+  <div class="filters" id="filters">
+    <button data-g="all" class="on">All</button>
+    <button data-g="reference">Reference</button>
+    <button data-g="contingency">Contingencies</button>
+    <button data-g="sequential">Sequential fault</button>
+    <button data-g="identity">Wrong records</button>
+  </div>
+  <div id="cards" class="cards"></div>
+</section>
+
+<section id="results" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Evaluation</p>
+    <h2>Safe at the cost the theory predicts</h2>
+    <p class="sub">Full-stack simulation runs and mission-level Monte Carlo trials compare AKR with two acting rules that share Thoth, the planner, the skills and the evidence rules and differ only in admissibility: the K-replanner rule (known true before every action) and the FF-Replan rule (not known false before every action). Authored PLEXIL and EUROPA→PLEXIL procedures represent flown space autonomy.</p>
+  </div>
+  <div class="gallery">
+    <figure class="paper-fig">
+      <a href="media/figures/fig_safety.webp" target="_blank" rel="noopener"><img src="media/figures/fig_safety.webp" alt="Trials with a hazardous action under faulty proposals, wrong records and wrong observations" loading="lazy"></a>
+      <figcaption>Safe execution: trials with a hazardous action under faulty proposals, wrong records and wrong observations, what was known of the false precondition, the no-spare repair, and the decision points of the full-stack runs.</figcaption>
+    </figure>
+    <figure class="paper-fig">
+      <a href="media/figures/fig_cost.webp" target="_blank" rel="noopener"><img src="media/figures/fig_cost.webp" alt="Sensing paid against its lower bound, sensing by action class, mission time and sensing against wrong records" loading="lazy"></a>
+      <figcaption>Cost of safety: sensing paid against its lower bound, the sensing set before irreversible and reversible actions, mission time, and sensing time against the record error rate.</figcaption>
+    </figure>
+    <figure class="paper-fig wide-fig">
+      <a href="media/figures/fig_recovery.webp" target="_blank" rel="noopener"><img src="media/figures/fig_recovery.webp" alt="Episodes per trial, completion on contingency missions and a sequential-fault run under AKR" loading="lazy"></a>
+      <figcaption>Recovery and termination: episodes per trial against the bound, completion on the contingency and sequential-fault missions, and a sequential-fault run under AKR.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="trust" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Trustworthy by construction</p>
+    <h2>Autonomy that keeps the engineering discipline</h2>
+  </div>
+  <div class="trust">
+    <a class="trust-card" data-jump="no-spare" href="#console">
+      <span class="t-k c-hold">Authority</span>
+      <h3>Ground authorization as a precondition</h3>
+      <p>Removing a module from an energized unit needs a ground grant, and only a ground request can observe it. The admissibility rule that withholds a handover onto an unread support also withholds this removal until the grant has been observed.</p>
+      <span class="t-go">Replay the no-spare repair →</span>
+    </a>
+    <a class="trust-card" data-jump="bess-battery" href="#console">
+      <span class="t-k c-verified">Evidence</span>
+      <h3>Effects judged, not assumed</h3>
+      <p>Every effect is judged from measurements, never from a controller's completion flag. When a measurement is inconclusive the evidence rule abstains: the effect stays unverified and a later sensing action decides it. Abstention costs time, and safety does not depend on it.</p>
+      <span class="t-go">Replay a repair →</span>
+    </a>
+    <a class="trust-card" data-jump="serial-swapped" href="#console">
+      <span class="t-k c-model">Records</span>
+      <h3>Wrong records cost time, not hardware</h3>
+      <p>The inventory record is a default the planner may act on, never knowledge. A false entry is found by one failed reversible attempt, so a wrong record costs AKR an episode and no sensing.</p>
+      <span class="t-go">Replay a delivery with exchanged records →</span>
+    </a>
+  </div>
+</section>
+
+<section id="start" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Get started</p>
+    <h2>Run it yourself</h2>
+    <p class="sub">Full-stack runs need Ubuntu 22.04, ROS 2 Humble, Isaac Sim 5.1 with Isaac Lab, an NVIDIA GPU and any OpenAI-compatible model endpoint; simulation and robot stack meet only on the ROS 2 bus. The executor core and the Monte Carlo study need only Python 3.10 and PyYAML.</p>
+  </div>
+  <div class="start">
+    <div class="code">
+      <div class="code-h"><span>bash</span><button class="copy" data-copy="code-main">Copy</button></div>
+<pre id="code-main"><code><span class="c"># clone</span>
+git clone https://github.com/Bingqi-Huang/thoth-lunar-agent
+cd thoth-lunar-agent &amp;&amp; export THOTH_ROOT=$(pwd)
+
+<span class="c"># Monte Carlo trials: executor unchanged, search planner, sampled site</span>
+python3 -m experiments.akr.montecarlo --grid main --trials 1000 \
+  --jobs 16 --out mc_main.jsonl
+python3 -m experiments.akr.mc_summary mc_main.jsonl
+
+<span class="c"># full stack: simulation assets, OpenRAL and the ROS 2 packages</span>
+scripts/fetch_assets.sh path/to/archive.tar.gz
+(cd openral &amp;&amp; ./scripts/install.sh)
+source /opt/ros/humble/setup.bash &amp;&amp; source openral/install/setup.bash
+(cd ros &amp;&amp; colcon build --merge-install)
+<span class="c"># then one mission end to end: see the README</span></code></pre>
+    </div>
+    <div class="layout">
+      <h3>Repository</h3>
+      <dl>
+        <dt>space_runtime/akr/</dt><dd>The AKR executor: knowledge state, admissibility for the three acting rules, sensing cover, episodes, certified holds</dd>
+        <dt>configs/akr_vocabulary.yaml</dt><dd>Declared propositions, actions, sensing costs and deadlines, evidence rules, missions, initial knowledge and record</dd>
+        <dt>openral_ext/ · ros/</dt><dd>The capability boundary every method calls: skills, evidence rules, telemetry</dd>
+        <dt>experiments/</dt><dd>Mission launcher, mission control behind the Earth link, per-run measures, Monte Carlo trials</dd>
+        <dt>baselines/</dt><dd>PLEXIL procedures and EUROPA→PLEXIL domains, original and revised</dd>
+        <dt>space_robotics_bench/</dt><dd>The lunar-base scene, its equipment dynamics and LunarBot in Isaac Sim</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div>
+    <p class="brand"><span class="brand-mark"></span>Thoth</p>
+    <p class="muted">THinking Onboard, Trusted by Humans. Bingqi Huang, Yingkai Cai, Zhaokui Wang · School of Aerospace Engineering, Tsinghua University.</p>
+  </div>
+  <div class="foot-links">
+    <a href="https://github.com/Bingqi-Huang/thoth-lunar-agent" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://bingqi-huang.github.io/" target="_blank" rel="noopener">Author</a>
+    <span class="muted">Code under Apache-2.0 · Replays are recorded simulation runs</span>
+  </div>
+</footer>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
