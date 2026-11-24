@@ -1,9 +1,10 @@
 import { Ev, Run, Scenario, SYSTEM_NAME, System, Unit } from "./types";
 import { Minimap } from "./minimap";
-import { VIDEO_BASE } from "./config";
+import { VIDEO_BASE, VIDEO_MIRROR } from "./config";
 const OUTCOME: Record<string, string> = { allow: "admitted", approval_required: "withheld", hold: "withheld", deny: "refused", unavailable: "unavailable" };
 
 const EARTH_SET = 925;          // sim s: direct Earth visibility ends
+const META_WAIT_MS = 6000;      // a video host that sends no metadata in this time is taken as unreachable
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 const clock = (t: number) => {
@@ -91,15 +92,21 @@ export class MissionConsole {
     this.video.addEventListener("ended", () => this.setPlaying(false));
     this.video.addEventListener("error", () => {
       if (!this.run || !this.video.getAttribute("src") || this.retryTimer) return;
-      if (this.light && this.video.src.includes(".sd.mp4") && this.video.readyState === 0) { this.light = false; this.noLight = true; }
+      if (!this.mirror && this.video.readyState === 0) { this.toMirror(); return; }
+      if (!this.mirror && this.light && this.video.src.includes(".sd.mp4") && this.video.readyState === 0) { this.light = false; this.noLight = true; }
       this.recover();
     });
-    $("cam").addEventListener("error", () => { const c = $<HTMLVideoElement>("cam"); const t = c.currentTime; c.src = c.src.split("?")[0] + `?r=${Date.now() % 1000}`; c.onloadedmetadata = () => { c.currentTime = t; }; });
+    $("cam").addEventListener("error", () => { if (!this.mirror) { this.toMirror(); return; } const c = $<HTMLVideoElement>("cam"); const t = c.currentTime; c.src = c.src.split("?")[0] + `?r=${Date.now() % 1000}`; c.onloadedmetadata = () => { c.currentTime = t; }; });
     const feed = $("feed");
     feed.addEventListener("wheel", () => requestAnimationFrame(() => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }), { passive: true });
     feed.addEventListener("touchmove", () => { this.stick = feed.scrollTop + feed.clientHeight > feed.scrollHeight - 40; }, { passive: true });
     feed.addEventListener("click", ev => { const c = (ev.target as HTMLElement).closest(".clamp"); if (c) { c.classList.toggle("open"); this.stick = false; } });
-    $("q-btn").onclick = () => { if (!this.run) return; this.light = !this.light; this.setSource(this.lastT - this.run.video.t0, 0); };
+    $("q-btn").onclick = () => {
+      if (!this.run) return;
+      this.light = !this.light;
+      if (!this.light && this.mirror) { this.mirror = false; this.setCam(); }
+      this.setSource(this.lastT - this.run.video.t0, 0);
+    };
     $("auth-grant").onclick = () => this.closeAuth(true);
     $("auth-later").onclick = () => this.closeAuth(false);
     document.addEventListener("keydown", ev => {
@@ -139,7 +146,11 @@ export class MissionConsole {
   // Source choice and stall recovery. The media host hands out signed links that expire; a player that keeps using
   // an expired link stalls for good, so a stall of more than a few seconds or an error reloads the source where it was.
   // Two stalls in one replay switch to the light 960x540 version for the rest of the visit.
+  // A host that cannot be reached at all (no metadata within META_WAIT_MS, a load error, or two stalls) switches to
+  // the same-site mirror of the light version and camera strips, at the same replay time, for the rest of the visit.
   light = false;
+  mirror = false;
+  metaTimer = 0;
   noLight = false;
   stalled = false;
   stallSince = 0;
@@ -148,10 +159,25 @@ export class MissionConsole {
   lastVT = -1;
   srcFor(run: Run) {
     const v = this.video, b = `${VIDEO_BASE}${run.id}`;
+    if (this.mirror) return `${VIDEO_MIRROR}${run.id}.sd.mp4`;
     if (this.light) return `${b}.sd.mp4`;
     if (v.canPlayType('video/mp4; codecs="av01.0.08M.08"') === "probably") return `${b}.av1.mp4`;
     if (v.canPlayType('video/mp4; codecs="hvc1.1.6.L120.90"')) return `${b}.hevc.mp4`;
     return `${b}.sd.mp4`;
+  }
+  camSrc(run: Run) { return `${this.mirror ? VIDEO_MIRROR : VIDEO_BASE}cams/${run.id}.mp4`; }
+  setCam() {
+    const run = this.run, cam = $<HTMLVideoElement>("cam");
+    if (!run?.cams) { cam.removeAttribute("src"); return; }
+    cam.src = this.camSrc(run);
+  }
+  toMirror() {
+    if (this.mirror || !this.run) return;
+    this.mirror = true; this.light = true;
+    this.stalls = 0; this.retries = 0;
+    clearTimeout(this.retryTimer); this.retryTimer = 0;
+    this.setCam();
+    this.setSource(this.lastT - this.run.video.t0, 0);
   }
   // Reload the source where the replay was (a fresh request gets a fresh signed link), backing off 1, 2, 4 ... 15 s
   // between attempts and never giving up; the replay's clock holds still meanwhile.
@@ -172,7 +198,10 @@ export class MissionConsole {
     v.removeAttribute("src");
     v.src = this.srcFor(run) + (retry ? `?r=${retry}` : "");
     v.playbackRate = this.rate;
+    clearTimeout(this.metaTimer);
+    if (!this.mirror) this.metaTimer = window.setTimeout(() => { if (v.readyState === 0) this.toMirror(); }, META_WAIT_MS);
     v.onloadedmetadata = () => {
+      clearTimeout(this.metaTimer);
       v.playbackRate = this.rate;
       if (resume !== null) v.currentTime = resume;
       this.recovering = false;
@@ -194,11 +223,12 @@ export class MissionConsole {
     if (this.stalled) this.winStalled += dt;
     if (now - this.winStart > 20000) {
       if (this.winStalled > 5000 && !this.light && !this.noLight && !this.recovering) { this.light = true; this.setSource(this.lastT - this.run!.video.t0, 0); }
+      else if (this.winStalled > 5000 && this.light && !this.mirror && !this.recovering) this.toMirror();
       this.winStart = now; this.winStalled = 0;
     }
     if (now - this.lastProgress > 6000 && !this.retryTimer) {
       this.stalls++;
-      if (this.stalls >= 2 && !this.light && !this.noLight) this.light = true;
+      if (this.stalls >= 2 && !this.mirror) { this.toMirror(); return; }
       this.recover();
     }
   }
@@ -257,8 +287,7 @@ export class MissionConsole {
     this.setSource(null);
     const cams = $("cams");
     cams.classList.toggle("off", !run.cams);
-    const cam = $<HTMLVideoElement>("cam");
-    cam.src = run.cams ? `${VIDEO_BASE}cams/${run.id}.mp4` : "";
+    this.setCam();
     this.lastT = run.video.t0;
     this.update(run.video.t0, true);
     if (autoplay) { this.setPlaying(true); }
